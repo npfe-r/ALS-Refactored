@@ -80,6 +80,12 @@ protected:
 		ReplicatedUsing = "OnReplicated_ReplicatedViewRotation")
 	FRotator ReplicatedViewRotation{ForceInit};
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State|Als Character", Transient, Replicated)
+	FVector AimPointRpc{ForceInit};
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State|Als Character", Transient, Replicated)
+	bool bAimPointFounded{false};
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State|Als Character", Transient)
 	FAlsViewState ViewState;
 
@@ -170,6 +176,9 @@ private:
 	UFUNCTION(Server, Reliable)
 	void ServerSetViewMode(const FGameplayTag& NewViewMode);
 
+	// FPS Changed	
+	FHitResult ScreenTraceHit;
+	
 	// Locomotion Mode
 
 public:
@@ -369,6 +378,17 @@ protected:
 public:
 	virtual FRotator GetViewRotation() const override;
 
+	// FPS Changed
+	FVector GetAimPoint() const
+	{
+		return AimPointRpc;
+	}
+
+	bool HasAimPoint() const
+	{
+		return bAimPointFounded;
+	}
+
 private:
 	void SetReplicatedViewRotation(const FRotator& NewViewRotation, bool bSendRpc);
 
@@ -378,6 +398,15 @@ private:
 	UFUNCTION()
 	void OnReplicated_ReplicatedViewRotation();
 
+	// FPS Changed
+	void SetAimPointRpc(const FVector& NewAimPoint, bool bAimPointFounded, const bool bSendRpc);
+	
+	UFUNCTION()
+	void OnReplicated_AimPointRpc();
+
+	UFUNCTION(Server, Unreliable)
+	void ServerSetAimPointRpc(const FVector& NewAimPoint, bool NewAimPointFounded);
+	
 public:
 	void CorrectViewNetworkSmoothing(const FRotator& NewTargetRotation, bool bRotationIsBaseRelative);
 
@@ -389,6 +418,9 @@ private:
 
 	void RefreshViewNetworkSmoothing(float DeltaTime);
 
+	// FPS Changed
+	bool ScreenTrace(FHitResult& HitResult);
+	
 	// Locomotion
 
 public:

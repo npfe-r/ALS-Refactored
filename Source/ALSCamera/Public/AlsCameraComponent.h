@@ -113,6 +113,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "ALS|Camera")
 	void SetRightShoulder(bool bNewRightShoulder);
+	// FPS Changed
+	FVector GetCameraLocation() const;
+	FRotator GetCameraRotation() const;
 
 	UFUNCTION(BlueprintPure, Category = "ALS|Camera", Meta = (ReturnDisplayName = "Camera Location"))
 	FVector GetFirstPersonCameraLocation() const;
@@ -198,4 +201,15 @@ inline bool UAlsCameraComponent::IsRightShoulder() const
 inline void UAlsCameraComponent::SetRightShoulder(const bool bNewRightShoulder)
 {
 	bRightShoulder = bNewRightShoulder;
+}
+
+// FPS Changed
+inline FVector UAlsCameraComponent::GetCameraLocation() const
+{
+	return CameraLocation;
+}
+
+inline FRotator UAlsCameraComponent::GetCameraRotation() const
+{
+	return CameraRotation;
 }

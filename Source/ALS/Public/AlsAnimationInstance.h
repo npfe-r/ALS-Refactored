@@ -187,6 +187,11 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "ALS|Animation Instance", Meta = (BlueprintThreadSafe))
 	void InitializeLook();
 
+	// FPS Changed
+	FHitResult ScreenTraceHit;
+	
+	bool ScreenTrace(FHitResult& HitResult);
+
 	UFUNCTION(BlueprintCallable, Category = "ALS|Animation Instance", Meta = (BlueprintThreadSafe))
 	void RefreshLook();
 
@@ -354,6 +359,9 @@ public:
 public:
 	float GetCurveValueClamped01(const FName& CurveName) const;
 };
+
+// FPS Changed
+	FTransform GetTrans( const FName& BoneName);
 
 inline UAlsAnimationInstanceSettings* UAlsAnimationInstance::GetSettingsUnsafe() const
 {

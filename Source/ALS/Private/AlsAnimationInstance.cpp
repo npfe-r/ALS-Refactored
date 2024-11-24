@@ -7,6 +7,8 @@
 #include "Curves/CurveFloat.h"
 #include "Engine/SkeletalMesh.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Settings/AlsAnimationInstanceSettings.h"
 #include "Settings/AlsCharacterSettings.h"
 #include "Utility/AlsConstants.h"
@@ -364,8 +366,30 @@ void UAlsAnimationInstance::RefreshView(const float DeltaTime)
 {
 	if (!LocomotionAction.IsValid())
 	{
-		ViewState.YawAngle = FMath::UnwindDegrees(UE_REAL_TO_FLOAT(ViewState.Rotation.Yaw - LocomotionState.Rotation.Yaw));
-		ViewState.PitchAngle = FMath::UnwindDegrees(UE_REAL_TO_FLOAT(ViewState.Rotation.Pitch - LocomotionState.Rotation.Pitch));
+	// FPS Changed
+		if(Character->GetViewMode() == AlsViewModeTags::ThirdPerson && Character->GetRotationMode() == AlsRotationModeTags::Aiming)
+		{
+			if(Character->HasAimPoint())
+			{
+				// GetSkelMeshComponent()->GetSocketLocation(FName("Spine_03"));
+				// GetSkelMeshComponent()->GetBoneLocation(FName("Spine_03"));
+				// GetOwningActor()->GetActorLocation()
+				FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(GetOwningActor()->GetActorLocation()+FVector::UpVector*50, Character->GetAimPoint());
+				// DrawDebugLine(GetWorld(), GetOwningActor()->GetActorLocation()+FVector::UpVector*50, Character->GetAimPoint(), FColor::Green, false, -1, 0, 1.0f);
+				ViewState.YawAngle = FMath::UnwindDegrees(UE_REAL_TO_FLOAT(LookAtRotation.Yaw - LocomotionState.Rotation.Yaw));
+				ViewState.PitchAngle = FMath::UnwindDegrees(UE_REAL_TO_FLOAT(LookAtRotation.Pitch - LocomotionState.Rotation.Pitch));
+			}
+			else
+			{
+			ViewState.YawAngle = FMath::UnwindDegrees(UE_REAL_TO_FLOAT(ViewState.Rotation.Yaw - LocomotionState.Rotation.Yaw));
+			ViewState.PitchAngle = FMath::UnwindDegrees(UE_REAL_TO_FLOAT(ViewState.Rotation.Pitch - LocomotionState.Rotation.Pitch));
+			}
+		}
+		else
+		{
+			ViewState.YawAngle = FMath::UnwindDegrees(UE_REAL_TO_FLOAT(ViewState.Rotation.Yaw - LocomotionState.Rotation.Yaw));
+			ViewState.PitchAngle = FMath::UnwindDegrees(UE_REAL_TO_FLOAT(ViewState.Rotation.Pitch - LocomotionState.Rotation.Pitch));
+		}
 
 		ViewState.PitchAmount = 0.5f - ViewState.PitchAngle / 180.0f;
 	}
@@ -381,6 +405,8 @@ void UAlsAnimationInstance::RefreshView(const float DeltaTime)
 bool UAlsAnimationInstance::IsSpineRotationAllowed()
 {
 	return RotationMode == AlsRotationModeTags::Aiming;
+	//Changed
+	// return RotationMode == AlsRotationModeTags::Aiming || ViewMode == AlsViewModeTags::FirstPerson;
 }
 
 void UAlsAnimationInstance::RefreshSpine(const float SpineBlendAmount, const float DeltaTime)
@@ -491,7 +517,59 @@ void UAlsAnimationInstance::InitializeLook()
 	LookState.bInitializationRequired = true;
 }
 
-void UAlsAnimationInstance::RefreshLook()
+// FPS Changed
+bool UAlsAnimationInstance::ScreenTrace(FHitResult& HitResult)
+{
+	FVector2D viewSize;
+	if(GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(viewSize);
+	}
+	else
+	{
+		return false;
+	}
+	FVector2D Center(viewSize.X / 2.0f, viewSize.Y / 2.0f);
+	FVector ChPos;
+	FVector ChDir;
+	bool bScrToWorld = UGameplayStatics::DeprojectScreenToWorld(
+		UGameplayStatics::GetPlayerController(this, 0),
+		Center,
+		ChPos,
+		ChDir
+	);
+
+	if(bScrToWorld)
+	{
+		FVector start = ChPos;
+		FVector end = start + ChDir * 20000.0f;
+		start += ChDir * 200.0f;
+		FCollisionQueryParams CollisionParam;
+		CollisionParam.AddIgnoredActor(GetOwningActor());
+		GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			start,
+			end,
+			ECollisionChannel::ECC_Camera,
+			CollisionParam
+		);
+		if(HitResult.bBlockingHit)
+		{
+			// DrawDebugLine(GetWorld(), start, end, FColor::Green, false, -1.0f, 0, 5.0f);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
+
+void UAlsAnimationInstance::RefreshLook_Implementation()
 {
 #if WITH_EDITOR
 	if (!IsValid(GetWorld()) || !GetWorld()->IsGameWorld())

@@ -688,6 +688,8 @@ void AAlsCharacter::RefreshRotationMode()
 
 	if (ViewMode == AlsViewModeTags::FirstPerson)
 	{
+		// SetRotationMode(AlsRotationModeTags::Aiming);
+		// return;
 		if (LocomotionMode == AlsLocomotionModeTags::InAir)
 		{
 			if (bAiming && Settings->bAllowAimingWhenInAir)
@@ -747,6 +749,7 @@ void AAlsCharacter::RefreshRotationMode()
 		else if (Settings->bRotateToVelocityWhenSprinting)
 		{
 			SetRotationMode(AlsRotationModeTags::VelocityDirection);
+			// SetRotationMode(AlsRotationModeTags::ViewDirection);
 		}
 		else
 		{
@@ -1162,6 +1165,31 @@ void AAlsCharacter::OnReplicated_ReplicatedViewRotation()
 	CorrectViewNetworkSmoothing(ReplicatedViewRotation, MovementBase.bHasRelativeRotation);
 }
 
+// FPS Changed
+//Replicat target
+void AAlsCharacter::SetAimPointRpc(const FVector& NewAimPoint, bool NewAimPointFounded, const bool bSendRpc)
+{
+	AimPointRpc = NewAimPoint;
+	bAimPointFounded = NewAimPointFounded;
+	
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, AimPointRpc, this)
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, bAimPointFounded, this)
+
+	if (bSendRpc && GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		ServerSetAimPointRpc(AimPointRpc, bAimPointFounded);
+	}
+}
+
+void AAlsCharacter::OnReplicated_AimPointRpc()
+{
+}
+
+void AAlsCharacter::ServerSetAimPointRpc_Implementation(const FVector& NewAimPoint, bool NewAimPointFounded)
+{
+	SetAimPointRpc(NewAimPoint, NewAimPointFounded, false);
+}
+
 void AAlsCharacter::CorrectViewNetworkSmoothing(const FRotator& NewTargetRotation, const bool bRotationIsBaseRelative)
 {
 	// Based on UCharacterMovementComponent::SmoothCorrection().
@@ -1327,6 +1355,59 @@ void AAlsCharacter::RefreshViewNetworkSmoothing(const float DeltaTime)
 	{
 		NetworkSmoothing.ClientTime = NetworkSmoothing.ServerTime;
 		NetworkSmoothing.CurrentRotation = NetworkSmoothing.TargetRotation;
+	}
+}
+
+// FPS Changed
+//Find aim point
+bool AAlsCharacter::ScreenTrace(FHitResult& HitResult)
+{
+	FVector2D viewSize;
+	if(GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(viewSize);
+	}
+	else
+	{
+		return false;
+	}
+	FVector2D Center(viewSize.X / 2.0f, viewSize.Y / 2.0f);
+	FVector ChPos;
+	FVector ChDir;
+	bool bScrToWorld = UGameplayStatics::DeprojectScreenToWorld(
+		UGameplayStatics::GetPlayerController(this, 0),
+		Center,
+		ChPos,
+		ChDir
+	);
+
+	if(bScrToWorld)
+	{
+		FVector start = ChPos;
+		FVector end = start + ChDir * 10000.0f;
+		start += ChDir * 200.0f;
+		FCollisionQueryParams CollisionParam;
+		CollisionParam.AddIgnoredActor(this);
+		GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			start,
+			end,
+			ECollisionChannel::ECC_Visibility,
+			CollisionParam
+		);
+		if(HitResult.bBlockingHit)
+		{
+			// DrawDebugLine(GetWorld(), start, end, FColor::Green, false, -1.0f, 0, 5.0f);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
 	}
 }
 
