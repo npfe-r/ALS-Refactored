@@ -145,10 +145,10 @@ void UAlsAnimNotify_FootstepEffects::Notify(USkeletalMeshComponent* Mesh, UAnimS
 
 	if (EffectSettings == nullptr)
 	{
-		for (const auto& [OtherSurfaceType, OtherEffectSettings] : FootstepEffectsSettings->Effects)
+		const auto* Pair{FootstepEffectsSettings->Effects.FindArbitraryElement()};
+		if (Pair != nullptr)
 		{
-			EffectSettings = &OtherEffectSettings;
-			break;
+			EffectSettings = &Pair->Value;
 		}
 
 		if (EffectSettings == nullptr)

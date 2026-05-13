@@ -252,7 +252,7 @@ void UAlsCharacterMovementComponent::UpdateBasedRotation(FRotator& FinalRotation
 	FVector MovementBaseLocation;
 	FQuat MovementBaseRotation;
 
-	MovementBaseUtility::GetMovementBaseTransform(BasedMovement.MovementBase, BasedMovement.BoneName,
+	MovementBaseUtility::GetMovementBaseTransform(&BasedMovement.MovementBaseInterfaceData, BasedMovement.BoneName,
 	                                              MovementBaseLocation, MovementBaseRotation);
 
 	if (!OldBaseQuat.Equals(MovementBaseRotation, UE_SMALL_NUMBER))

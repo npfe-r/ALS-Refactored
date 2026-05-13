@@ -80,7 +80,8 @@ void FAlsRootMotionSource_Mantling::PrepareRootMotion(const float SimulationDelt
 	FTransform StartTransform{StartRotation, StartLocation};
 	FTransform TargetTransform{TargetRotation, TargetLocation};
 
-	if (MovementBaseUtility::UseRelativeLocation(TargetPrimitive.Get()))
+	FMovementBaseInterfaceData MovementBaseData{TargetPrimitive.Get()};
+	if (MovementBaseUtility::UseRelativeLocation(&MovementBaseData))
 	{
 		// Convert the start and target transforms from target primitive space to world space.
 

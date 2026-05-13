@@ -184,13 +184,14 @@ void UAlsCameraComponent::TickCamera(const float DeltaTime, bool bAllowLag)
 
 	if (bMovementBaseHasRelativeRotation)
 	{
-		MovementBaseUtility::GetMovementBaseTransform(BasedMovement.MovementBase, BasedMovement.BoneName,
+		MovementBaseUtility::GetMovementBaseTransform(&BasedMovement.MovementBaseInterfaceData, BasedMovement.BoneName,
 		                                              MovementBaseLocation, MovementBaseRotation);
 	}
 
-	if (BasedMovement.MovementBase != MovementBasePrimitive || BasedMovement.BoneName != MovementBaseBoneName)
+	if (BasedMovement.MovementBaseInterfaceData != MovementBaseInterfaceData ||
+	    BasedMovement.BoneName != MovementBaseBoneName)
 	{
-		MovementBasePrimitive = BasedMovement.MovementBase;
+		MovementBaseInterfaceData = BasedMovement.MovementBaseInterfaceData;
 		MovementBaseBoneName = BasedMovement.BoneName;
 
 		if (bMovementBaseHasRelativeRotation)
